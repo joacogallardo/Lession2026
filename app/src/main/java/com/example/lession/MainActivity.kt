@@ -68,7 +68,10 @@ enum class TipoActividad(
     FUTBOL("Fútbol", 130, 180, 5.5f, 0.24f, 4.5f, Icons.Default.SportsSoccer, 60f),
     BASQUET("Básquet", 125, 175, 5.2f, 0.22f, 4.2f, Icons.Default.SportsBasketball, 55f),
     CICLISMO("Ciclismo", 115, 160, 4.0f, 0.16f, 3.2f, Icons.Default.DirectionsBike, 18f),
-    FUERZA("Entr. Fuerza", 105, 150, 4.2f, 0.14f, 5.5f, Icons.Default.FitnessCenter, 30f)
+cd 'C:\Users\proalafalda\AndroidStudioProjects\LESSION2'
+git branch -M main
+git remote add origin https://github.com/TU_USUARIO/Lession2026.git
+git push -u origin main    FUERZA("Entr. Fuerza", 105, 150, 4.2f, 0.14f, 5.5f, Icons.Default.FitnessCenter, 30f)
 }
 
 data class EstadoMusculo(
