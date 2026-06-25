@@ -4,7 +4,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -31,7 +30,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.ViewModelProvider
 import com.example.lession.data.SimulacionState
 import com.example.lession.data.TipoActividad
 import com.example.lession.presentation.LessionViewModel
@@ -42,19 +41,23 @@ import kotlin.math.*
 // --- UI PRINCIPAL ---
 
 class MainActivity : ComponentActivity() {
+    private val viewModel: LessionViewModel by lazy {
+        ViewModelProvider(this).get(LessionViewModel::class.java)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             LESSIONTheme {
-                LessionApp()
+                LessionApp(viewModel)
             }
         }
     }
 }
 
 @Composable
-fun LessionApp(viewModel: LessionViewModel = viewModel()) {
+fun LessionApp(viewModel: LessionViewModel) {
     val state = viewModel.state
 
     Scaffold(
@@ -105,7 +108,7 @@ fun HeaderLession() {
             .padding(horizontal = 24.dp, vertical = 20.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(Icons.Default.HealthAndSafety, contentDescription = null, tint = LessionYellow, modifier = Modifier.size(40.dp))
+        Icon(Icons.Default.FavoriteBorder, contentDescription = null, tint = LessionYellow, modifier = Modifier.size(40.dp))
         Spacer(modifier = Modifier.width(16.dp))
         Text(
             "LESSION",
@@ -154,7 +157,7 @@ fun SimuladorContainer(state: SimulacionState, viewModel: LessionViewModel) {
                 .padding(20.dp)
                 .background(Color.Black.copy(0.4f), CircleShape)
         ) {
-            Icon(Icons.Default.FlipCameraAndroid, contentDescription = null, tint = Color.White)
+            Icon(Icons.Default.Refresh, contentDescription = null, tint = Color.White)
         }
 
         // INDICADOR DE ACTIVIDAD ACTUAL
@@ -170,9 +173,9 @@ fun SimuladorContainer(state: SimulacionState, viewModel: LessionViewModel) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    if (state.lesion != null) Icons.Default.Warning else state.actividadActual.icon, 
-                    contentDescription = null, 
-                    tint = if (state.lesion != null) LessionRed else LessionYellow, 
+                    if (state.lesion != null) Icons.Default.Info else state.actividadActual.icon,
+                    contentDescription = null,
+                    tint = if (state.lesion != null) LessionRed else LessionYellow,
                     modifier = Modifier.size(24.dp)
                 )
                 Spacer(modifier = Modifier.width(16.dp))
@@ -247,8 +250,8 @@ fun LessionAvatarCanvas(state: SimulacionState, modifier: Modifier = Modifier) {
         // 2. EXTREMIDADES DINÁMICAS
         // Brazos
         var leftArmOffset = armY
-        var rightArmOffset = -armY
-        
+        val rightArmOffset = -armY
+
         // Animación de dolor
         if (isInjured) {
             when (state.lesion) {
@@ -434,7 +437,7 @@ fun SelectorActividades(state: SimulacionState, viewModel: LessionViewModel) {
                 contentPadding = PaddingValues(horizontal = 24.dp),
                 horizontalArrangement = Arrangement.spacedBy(18.dp)
             ) {
-                items(TipoActividad.values()) { act ->
+                items(TipoActividad.entries) { act ->
                     ActividadItem(
                         act = act,
                         isSelected = state.actividadActual == act,
@@ -500,7 +503,7 @@ fun OverlayLesion(musculo: String, viewModel: LessionViewModel) {
                     modifier = Modifier.size(110.dp).background(LessionRed.copy(0.25f), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.PriorityHigh, contentDescription = null, tint = LessionRed, modifier = Modifier.size(70.dp))
+                    Icon(Icons.Default.Info, contentDescription = null, tint = LessionRed, modifier = Modifier.size(70.dp))
                 }
                 Spacer(modifier = Modifier.height(32.dp))
                 Text("¡LESIÓN DETECTADA!", color = Color.White, fontSize = 32.sp, fontWeight = FontWeight.Black)
@@ -530,6 +533,6 @@ fun OverlayLesion(musculo: String, viewModel: LessionViewModel) {
 @Composable
 fun LessionPreview() {
     LESSIONTheme {
-        LessionApp()
+        LessionApp(LessionViewModel())
     }
 }

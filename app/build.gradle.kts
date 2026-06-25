@@ -39,6 +39,8 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+    // Fallback explicit dependency to ensure IDE and static analysis resolve the compose viewModel API
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1")
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
@@ -46,6 +48,8 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.extended)
+    // Explicit icons dependency to avoid unresolved symbol warnings in some IDE analyzers
+    implementation("androidx.compose.material:material-icons-extended:1.6.0")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

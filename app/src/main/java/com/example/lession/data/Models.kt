@@ -18,18 +18,18 @@ enum class TipoActividad(
     val icon: ImageVector,
     val amplitudMov: Float
 ) {
-    DESCANSO("Descanso", 60, 75, -1.8f, -0.06f, -3.0f, Icons.Default.Bedtime, 0f),
-    CAMINAR("Caminar", 75, 95, 0.5f, 0.02f, 0.8f, Icons.Default.DirectionsWalk, 14f),
-    TROTAR("Trotar", 95, 120, 1.4f, 0.05f, 1.6f, Icons.Default.DirectionsRun, 24f),
-    CORRER("Correr", 120, 150, 3.2f, 0.11f, 3.0f, Icons.Default.DirectionsRun, 42f),
-    SPRINTAR("Sprintar", 150, 190, 7.5f, 0.28f, 6.5f, Icons.Default.FlashOn, 70f),
-    SALTAR("Saltar", 130, 165, 4.8f, 0.18f, 5.2f, Icons.Default.ArrowUpward, 55f),
-    SENTADILLAS("Sentadillas", 110, 145, 4.2f, 0.13f, 5.8f, Icons.Default.Accessibility, 38f),
-    ESTOCADAS("Estocadas", 100, 135, 3.6f, 0.10f, 4.8f, Icons.Default.AccessibilityNew, 36f),
-    FUTBOL("Fútbol", 130, 180, 5.5f, 0.24f, 4.5f, Icons.Default.SportsSoccer, 60f),
-    BASQUET("Básquet", 125, 175, 5.2f, 0.22f, 4.2f, Icons.Default.SportsBasketball, 55f),
-    CICLISMO("Ciclismo", 115, 160, 4.0f, 0.16f, 3.2f, Icons.Default.DirectionsBike, 18f),
-    FUERZA("Entr. Fuerza", 105, 150, 4.2f, 0.14f, 5.5f, Icons.Default.FitnessCenter, 30f)
+    DESCANSO("Descanso", 60, 75, -1.8f, -0.06f, -3.0f, Icons.Default.HolidayVillage, 0f),
+    CAMINAR("Caminar", 75, 95, 0.5f, 0.02f, 0.8f, Icons.Default.Directions, 14f),
+    TROTAR("Trotar", 95, 120, 1.4f, 0.05f, 1.6f, Icons.Default.DirectionsWalk, 24f),
+    CORRER("Correr", 120, 150, 3.2f, 0.11f, 3.0f, Icons.Default.DirectionsWalk, 42f),
+    SPRINTAR("Sprintar", 150, 190, 7.5f, 0.28f, 6.5f, Icons.Default.Bolt, 70f),
+    SALTAR("Saltar", 130, 165, 4.8f, 0.18f, 5.2f, Icons.Default.Favorite, 55f),
+    SENTADILLAS("Sentadillas", 110, 145, 4.2f, 0.13f, 5.8f, Icons.Default.CropSquare, 38f),
+    ESTOCADAS("Estocadas", 100, 135, 3.6f, 0.10f, 4.8f, Icons.Default.LinearScale, 36f),
+    FUTBOL("Fútbol", 130, 180, 5.5f, 0.24f, 4.5f, Icons.Default.Adjust, 60f),
+    BASQUET("Básquet", 125, 175, 5.2f, 0.22f, 4.2f, Icons.Default.Adjust, 55f),
+    CICLISMO("Ciclismo", 115, 160, 4.0f, 0.16f, 3.2f, Icons.Default.DriveEta, 18f),
+    FUERZA("Entr. Fuerza", 105, 150, 4.2f, 0.14f, 5.5f, Icons.Default.Favorite, 30f)
 }
 
 /**

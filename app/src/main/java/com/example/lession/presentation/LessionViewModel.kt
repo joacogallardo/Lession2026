@@ -5,10 +5,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.lession.data.SimulacionState
 import com.example.lession.data.TipoActividad
-import com.example.lession.data.EstadoMusculo
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.math.sqrt
+// sqrt not used
 
 /**
  * ViewModel para la lógica de simulación del cuerpo humano
