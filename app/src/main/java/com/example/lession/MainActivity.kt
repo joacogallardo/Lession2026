@@ -94,7 +94,6 @@ import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
-
 class MainActivity : ComponentActivity() {
     private val viewModel: LessionViewModel by lazy {
         ViewModelProvider(this)[LessionViewModel::class.java]
