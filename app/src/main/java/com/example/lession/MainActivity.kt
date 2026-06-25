@@ -40,7 +40,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Rotate90DegreesCcw
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -191,11 +191,25 @@ fun SimuladorContainer(state: SimulacionState, viewModel: LessionViewModel, modi
             .border(1.dp, Color.White.copy(0.08f), RoundedCornerShape(28.dp))
     ) {
         LessionAvatarCanvas(state = state, modifier = Modifier.fillMaxSize())
-        IconButton(
+        Surface(
             onClick = { viewModel.alternarVista() },
-            modifier = Modifier.align(Alignment.TopEnd).padding(14.dp).background(Color.Black.copy(0.35f), CircleShape)
+            modifier = Modifier.align(Alignment.TopEnd).padding(14.dp),
+            color = Color.Black.copy(0.42f),
+            shape = RoundedCornerShape(18.dp)
         ) {
-            Icon(Icons.Default.Refresh, contentDescription = "Cambiar vista", tint = Color.White)
+            Row(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(Icons.Default.Rotate90DegreesCcw, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    if (state.esFrontal) "Frente" else "Espalda",
+                    color = Color.White,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
         Surface(
             modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp),
@@ -228,17 +242,17 @@ fun LessionAvatarCanvas(state: SimulacionState, modifier: Modifier = Modifier) {
             animation = tween(
                 durationMillis = when (state.actividadActual) {
                     TipoActividad.DESCANSO -> 3600
-                    TipoActividad.CAMINAR -> 1200
-                    TipoActividad.TROTAR -> 850
-                    TipoActividad.CORRER -> 620
-                    TipoActividad.SPRINTAR -> 380
-                    TipoActividad.SALTAR -> 900
-                    TipoActividad.SENTADILLAS -> 1400
-                    TipoActividad.ESTOCADAS -> 1300
-                    TipoActividad.FUTBOL -> 900
-                    TipoActividad.BASQUET -> 780
-                    TipoActividad.CICLISMO -> 620
-                    TipoActividad.FUERZA -> 1050
+                    TipoActividad.CAMINAR -> 1500
+                    TipoActividad.TROTAR -> 1100
+                    TipoActividad.CORRER -> 820
+                    TipoActividad.SPRINTAR -> 560
+                    TipoActividad.SALTAR -> 1100
+                    TipoActividad.SENTADILLAS -> 1700
+                    TipoActividad.ESTOCADAS -> 1600
+                    TipoActividad.FUTBOL -> 1050
+                    TipoActividad.BASQUET -> 1050
+                    TipoActividad.CICLISMO -> 880
+                    TipoActividad.FUERZA -> 1350
                 },
                 easing = LinearEasing
             ),
@@ -255,15 +269,30 @@ fun LessionAvatarCanvas(state: SimulacionState, modifier: Modifier = Modifier) {
 
     Canvas(modifier = modifier) {
         val s = (minOf(size.width, size.height) / 520f).coerceAtMost(1.25f)
-        val cx = size.width / 2f
+        val act = state.actividadActual
+        val sceneTravel = when (act) {
+            TipoActividad.CAMINAR -> 28f
+            TipoActividad.TROTAR -> 38f
+            TipoActividad.CORRER, TipoActividad.FUTBOL -> 48f
+            TipoActividad.SPRINTAR -> 58f
+            TipoActividad.CICLISMO -> 24f
+            else -> 0f
+        } * sin(time * 0.5f) * s
+        val cx = size.width / 2f + sceneTravel
         val baseCy = size.height / 2f + 14f * s
         val injured = state.lesion != null || state.alertaSobrecarga != null
-        val act = state.actividadActual
 
-        val breath = if (act == TipoActividad.DESCANSO) sin(time) * 5f * s else 0f
+        val breath = if (act == TipoActividad.DESCANSO) sin(time) * 5f * s else sin(time * 2f) * 2f * s
         val squat = if (act == TipoActividad.SENTADILLAS) (1f - cos(time)) * 26f * s else 0f
         val jump = if (act == TipoActividad.SALTAR) -abs(sin(time)) * 58f * s else 0f
-        val cy = baseCy + breath + squat + jump
+        val runBounce = when (act) {
+            TipoActividad.CAMINAR -> abs(sin(time)) * 5f
+            TipoActividad.TROTAR -> abs(sin(time)) * 8f
+            TipoActividad.CORRER, TipoActividad.FUTBOL -> abs(sin(time)) * 11f
+            TipoActividad.SPRINTAR -> abs(sin(time)) * 13f
+            else -> 0f
+        } * s
+        val cy = baseCy + breath + squat + jump - runBounce
         val stride = when (act) {
             TipoActividad.CAMINAR -> 16f
             TipoActividad.TROTAR -> 28f
@@ -272,30 +301,64 @@ fun LessionAvatarCanvas(state: SimulacionState, modifier: Modifier = Modifier) {
             TipoActividad.ESTOCADAS -> 52f
             else -> 0f
         } * sin(time) * s
-        val pedal = if (act == TipoActividad.CICLISMO) 38f * s else 0f
+        val cycling = act == TipoActividad.CICLISMO
+        val pedal = if (cycling) 42f * s else 0f
         val arm = when (act) {
             TipoActividad.FUERZA -> -abs(sin(time)) * 42f * s
             TipoActividad.BASQUET -> abs(sin(time)) * 26f * s
+            TipoActividad.CICLISMO -> 18f * s
             else -> -stride * 0.7f
         }
+        val lean = when (act) {
+            TipoActividad.CICLISMO -> 20f * s
+            TipoActividad.SPRINTAR -> 12f * s
+            TipoActividad.CORRER, TipoActividad.FUTBOL -> 8f * s
+            else -> 0f
+        }
         val bodyColor = LessionVioletAccent
+        val torsoTop = Offset(cx + lean, cy - 138 * s)
+        val torsoBottom = Offset(cx, cy - 22 * s)
         val body = Path().apply {
-            addOval(Rect(cx - 20 * s, cy - 188 * s, cx + 20 * s, cy - 148 * s))
-            addRoundRect(RoundRect(Rect(cx - 34 * s, cy - 138 * s, cx + 34 * s, cy - 22 * s), 18 * s, 18 * s))
+            addOval(Rect(cx + lean - 20 * s, cy - 188 * s, cx + lean + 20 * s, cy - 148 * s))
+            moveTo(torsoTop.x - 30 * s, torsoTop.y)
+            lineTo(torsoTop.x + 30 * s, torsoTop.y)
+            lineTo(torsoBottom.x + 34 * s, torsoBottom.y)
+            lineTo(torsoBottom.x - 34 * s, torsoBottom.y)
+            close()
         }
 
         drawPath(body, bodyColor)
-        drawRoundRect(bodyColor, Offset(cx - 66 * s, cy - 132 * s + arm), Size(24 * s, 106 * s), CornerRadius(12 * s))
-        drawRoundRect(bodyColor, Offset(cx + 42 * s, cy - 132 * s - arm), Size(24 * s, 106 * s), CornerRadius(12 * s))
-        drawRoundRect(bodyColor, Offset(cx - 34 * s - stride * 0.25f, cy - 16 * s + stride + pedal * sin(time)), Size(30 * s, 178 * s), CornerRadius(15 * s))
-        drawRoundRect(bodyColor, Offset(cx + 4 * s + stride * 0.25f, cy - 16 * s - stride - pedal * sin(time)), Size(30 * s, 178 * s), CornerRadius(15 * s))
+        val leftShoulder = Offset(torsoTop.x - 30 * s, torsoTop.y + 12 * s)
+        val rightShoulder = Offset(torsoTop.x + 30 * s, torsoTop.y + 12 * s)
+        val leftHand = if (cycling) Offset(cx - 62 * s, cy + 88 * s) else Offset(cx - 72 * s, cy - 38 * s + arm)
+        val rightHand = if (cycling) Offset(cx + 66 * s, cy + 88 * s) else Offset(cx + 72 * s, cy - 38 * s - arm)
+        drawLine(bodyColor, leftShoulder, leftHand, 17 * s, cap = StrokeCap.Round)
+        drawLine(bodyColor, rightShoulder, rightHand, 17 * s, cap = StrokeCap.Round)
 
-        if (act == TipoActividad.CICLISMO) {
-            drawCircle(Color.White.copy(0.18f), 44 * s, Offset(cx - 62 * s, cy + 138 * s), style = Stroke(5 * s))
-            drawCircle(Color.White.copy(0.18f), 44 * s, Offset(cx + 62 * s, cy + 138 * s), style = Stroke(5 * s))
-            drawLine(LessionYellow.copy(0.55f), Offset(cx - 62 * s, cy + 138 * s), Offset(cx, cy + 74 * s), 5 * s)
-            drawLine(LessionYellow.copy(0.55f), Offset(cx + 62 * s, cy + 138 * s), Offset(cx, cy + 74 * s), 5 * s)
+        val hipLeft = Offset(cx - 22 * s, cy - 16 * s)
+        val hipRight = Offset(cx + 22 * s, cy - 16 * s)
+        if (cycling) {
+            val wheelY = cy + 142 * s
+            val crank = Offset(cx, cy + 82 * s)
+            val leftFoot = Offset(crank.x + cos(time) * pedal, crank.y + sin(time) * pedal)
+            val rightFoot = Offset(crank.x + cos(time + PI.toFloat()) * pedal, crank.y + sin(time + PI.toFloat()) * pedal)
+            drawLine(LessionYellow.copy(0.5f), Offset(cx - 78 * s, wheelY), crank, 5 * s)
+            drawLine(LessionYellow.copy(0.5f), Offset(cx + 78 * s, wheelY), crank, 5 * s)
+            drawLine(LessionYellow.copy(0.5f), Offset(cx - 78 * s, wheelY), Offset(cx + 78 * s, wheelY), 4 * s)
+            drawCircle(Color.White.copy(0.18f), 48 * s, Offset(cx - 78 * s, wheelY), style = Stroke(5 * s))
+            drawCircle(Color.White.copy(0.18f), 48 * s, Offset(cx + 78 * s, wheelY), style = Stroke(5 * s))
+            drawCircle(LessionYellow.copy(0.75f), 8 * s, crank)
+            drawLine(bodyColor, hipLeft, leftFoot, 18 * s, cap = StrokeCap.Round)
+            drawLine(bodyColor, hipRight, rightFoot, 18 * s, cap = StrokeCap.Round)
+            drawLine(LessionYellow, crank, leftFoot, 4 * s, cap = StrokeCap.Round)
+            drawLine(LessionYellow, crank, rightFoot, 4 * s, cap = StrokeCap.Round)
+        } else {
+            val leftFoot = Offset(cx - 34 * s - stride * 0.45f, cy + 166 * s + stride * 0.25f)
+            val rightFoot = Offset(cx + 34 * s + stride * 0.45f, cy + 166 * s - stride * 0.25f)
+            drawLine(bodyColor, hipLeft, leftFoot, 21 * s, cap = StrokeCap.Round)
+            drawLine(bodyColor, hipRight, rightFoot, 21 * s, cap = StrokeCap.Round)
         }
+
         if (act == TipoActividad.FUTBOL) {
             val ballX = cx + 96 * s + abs(sin(time)) * 74 * s
             drawCircle(Color.White, 18 * s, Offset(ballX, cy + 158 * s))
@@ -307,8 +370,8 @@ fun LessionAvatarCanvas(state: SimulacionState, modifier: Modifier = Modifier) {
             drawLine(Color.Black.copy(0.35f), Offset(cx + 60 * s, ballY), Offset(cx + 96 * s, ballY), 2 * s)
         }
         if (act == TipoActividad.FUERZA) {
-            drawRoundRect(LessionYellow, Offset(cx - 105 * s, cy - 118 * s + arm), Size(28 * s, 16 * s), CornerRadius(5 * s))
-            drawRoundRect(LessionYellow, Offset(cx + 78 * s, cy - 118 * s - arm), Size(28 * s, 16 * s), CornerRadius(5 * s))
+            drawRoundRect(LessionYellow, Offset(leftHand.x - 16 * s, leftHand.y - 8 * s), Size(32 * s, 16 * s), CornerRadius(5 * s))
+            drawRoundRect(LessionYellow, Offset(rightHand.x - 16 * s, rightHand.y - 8 * s), Size(32 * s, 16 * s), CornerRadius(5 * s))
         }
 
         val flowColor = when {
@@ -317,17 +380,33 @@ fun LessionAvatarCanvas(state: SimulacionState, modifier: Modifier = Modifier) {
             state.hr > 100 -> LessionYellow
             else -> Color(0xFF00E5FF)
         }
-        drawPath(body, flowColor, style = Stroke(4f * s, pathEffect = PathEffect.dashPathEffect(floatArrayOf(48f, 96f), flow)))
+        drawPath(body, flowColor.copy(alpha = 0.55f), style = Stroke(3f * s, pathEffect = PathEffect.dashPathEffect(floatArrayOf(48f, 112f), flow)))
 
         state.musculos.forEach { (name, muscle) ->
-            val intensity = ((muscle.fatiga * 0.55f + muscle.carga * 0.45f) / 100f).coerceIn(0f, 1f)
+            val affected = state.lesion == name || state.alertaSobrecarga == name
+            val intensity = ((muscle.fatiga * 0.45f + muscle.carga * 0.55f) / 100f).coerceIn(0f, 1f)
             val pos = musclePosition(name, cx, cy, s, state.esFrontal)
-            if (pos != null && (intensity > 0.06f || state.lesion == name || state.alertaSobrecarga == name)) {
-                val hot = state.lesion == name || state.alertaSobrecarga == name || muscle.fatiga > 82f
+            if (pos != null && (affected || muscle.carga > 18f || muscle.fatiga > 25f)) {
+                val hot = affected || muscle.fatiga > 82f
                 val color = if (hot) LessionRed else if (muscle.fatiga > 60f) LessionOrange else LessionYellow
-                val pulse = 1f + abs(sin(time * 3f)) * 0.35f
-                drawCircle(color, (12f + intensity * 22f) * s * pulse, pos, alpha = 0.25f + intensity * 0.55f)
-                drawCircle(color, (16f + intensity * 24f) * s * pulse, pos, style = Stroke(3f * s), alpha = 0.45f)
+                val pulse = if (affected) 1f + abs(sin(time * 3f)) * 0.28f else 1f
+                val zoneWidth = muscleZoneWidth(name) * s * (0.85f + intensity * 0.35f) * pulse
+                val zoneHeight = muscleZoneHeight(name) * s * (0.85f + intensity * 0.35f) * pulse
+                drawOval(
+                    color = color,
+                    topLeft = Offset(pos.x - zoneWidth / 2f, pos.y - zoneHeight / 2f),
+                    size = Size(zoneWidth, zoneHeight),
+                    alpha = if (affected) 0.72f else 0.28f + intensity * 0.28f
+                )
+                if (affected || muscle.fatiga > 70f) {
+                    drawOval(
+                        color = color,
+                        topLeft = Offset(pos.x - zoneWidth / 2f, pos.y - zoneHeight / 2f),
+                        size = Size(zoneWidth, zoneHeight),
+                        style = Stroke(2.5f * s),
+                        alpha = 0.55f
+                    )
+                }
             }
         }
 
@@ -353,6 +432,25 @@ private fun musclePosition(name: String, cx: Float, cy: Float, s: Float, frontal
     "Rodillas" -> if (frontal) Offset(cx - 20 * s, cy + 108 * s) else null
     "Tobillos" -> Offset(cx - 20 * s, cy + 176 * s)
     else -> null
+}
+
+private fun muscleZoneWidth(name: String): Float = when (name) {
+    "Cuadriceps", "Isquiotibiales", "Gemelos", "Tibiales" -> 22f
+    "Gluteos" -> 48f
+    "Hombros" -> 34f
+    "Biceps", "Triceps" -> 18f
+    "Rodillas", "Tobillos" -> 24f
+    else -> 22f
+}
+
+private fun muscleZoneHeight(name: String): Float = when (name) {
+    "Cuadriceps", "Isquiotibiales" -> 56f
+    "Gemelos", "Tibiales" -> 46f
+    "Gluteos" -> 28f
+    "Hombros" -> 24f
+    "Biceps", "Triceps" -> 42f
+    "Rodillas", "Tobillos" -> 24f
+    else -> 28f
 }
 
 @Composable

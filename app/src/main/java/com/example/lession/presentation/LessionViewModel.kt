@@ -29,23 +29,23 @@ class LessionViewModel : ViewModel() {
         if (_state.value.lesion != null) return
 
         val act = _state.value.actividadActual
-        val targetHR = act.hrMax.toFloat()
+        val targetHR = if (act == TipoActividad.DESCANSO) 68f else (act.hrMin + (act.hrMax - act.hrMin) * 0.72f)
         val deltaHR = targetHR - _state.value.hr
-        val factorHR = if (act == TipoActividad.DESCANSO) 0.2f else 0.08f
-        val stepHR = (deltaHR * factorHR).coerceIn(-3.0f, 4.0f)
-        val nuevoHR = (_state.value.hr + stepHR).coerceIn(60f, 205f)
+        val factorHR = if (act == TipoActividad.DESCANSO) 0.12f else 0.045f
+        val stepHR = (deltaHR * factorHR).coerceIn(-2.0f, 2.4f)
+        val nuevoHR = (_state.value.hr + stepHR).coerceIn(58f, 196f)
 
         val factorEnergia = if (act == TipoActividad.DESCANSO) {
-            -1.5f
+            -1.25f
         } else {
-            (act.consumoEnergia * (nuevoHR / 80f)) * 0.3f
+            (act.consumoEnergia * (nuevoHR / 95f)) * 0.16f
         }
         val nuevaEnergia = (_state.value.energia - factorEnergia).coerceIn(0f, 100f)
 
         val factorTemp = if (act == TipoActividad.DESCANSO) {
             -0.06f
         } else {
-            (act.aumentoTemp * (nuevoHR / 110f)) * 0.5f
+            (act.aumentoTemp * (nuevoHR / 125f)) * 0.28f
         }
         val nuevaTemp = (_state.value.temperatura + factorTemp).coerceIn(36.5f, 42.5f)
 
@@ -55,27 +55,27 @@ class LessionViewModel : ViewModel() {
         nuevosMusculos.forEach { (nombre, mState) ->
             val activo = musculosActivos.contains(nombre)
             val cargaNueva = if (activo) {
-                (mState.carga + act.impactoMuscular * 0.9f).coerceIn(0f, 100f)
+                (mState.carga + act.impactoMuscular * 0.45f).coerceIn(0f, 100f)
             } else {
-                (mState.carga - 2.5f).coerceIn(0f, 100f)
+                (mState.carga - 3.2f).coerceIn(0f, 100f)
             }
             val fatigaNueva = if (activo) {
-                (mState.fatiga + (cargaNueva * 0.028f)).coerceIn(0f, 100f)
+                (mState.fatiga + (cargaNueva * 0.011f)).coerceIn(0f, 100f)
             } else {
-                (mState.fatiga - 1.5f).coerceIn(0f, 100f)
+                (mState.fatiga - 2.1f).coerceIn(0f, 100f)
             }
             nuevosMusculos[nombre] = mState.copy(carga = cargaNueva, fatiga = fatigaNueva)
         }
 
         val nuevaFatigaG = nuevosMusculos.values.map { it.fatiga }.average().toFloat()
         val musculoCritico = nuevosMusculos.values
-            .filter { it.carga > 88f && it.fatiga > 82f }
+            .filter { it.carga > 96f && it.fatiga > 92f }
             .maxByOrNull { it.carga + it.fatiga }
 
         var lesionNueva: String? = null
-        if (nuevoHR > 170 && nuevaFatigaG > 80f && nuevaTemp > 39.5f) {
-            val candidato = nuevosMusculos.values.filter { it.fatiga > 85f }.randomOrNull()
-            if (candidato != null && (0..100).random() < 22) {
+        if (nuevoHR > 184 && nuevaFatigaG > 90f && nuevaTemp > 40.2f && _state.value.tiempoActividad > 120) {
+            val candidato = nuevosMusculos.values.filter { it.fatiga > 92f }.randomOrNull()
+            if (candidato != null && (0..100).random() < 6) {
                 lesionNueva = candidato.nombre
             }
         }
