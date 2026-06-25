@@ -4,98 +4,166 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.*
-import androidx.compose.foundation.layout.*
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModelProvider
+import com.example.lession.data.EstadoMusculo
 import com.example.lession.data.SimulacionState
 import com.example.lession.data.TipoActividad
 import com.example.lession.presentation.LessionViewModel
-import com.example.lession.ui.theme.*
-import kotlin.math.*
-
-
-// --- UI PRINCIPAL ---
+import com.example.lession.ui.theme.LESSIONTheme
+import com.example.lession.ui.theme.LessionEnergy
+import com.example.lession.ui.theme.LessionFatigue
+import com.example.lession.ui.theme.LessionOrange
+import com.example.lession.ui.theme.LessionRed
+import com.example.lession.ui.theme.LessionTemp
+import com.example.lession.ui.theme.LessionViolet
+import com.example.lession.ui.theme.LessionVioletAccent
+import com.example.lession.ui.theme.LessionVioletLight
+import com.example.lession.ui.theme.LessionYellow
+import kotlin.math.PI
+import kotlin.math.abs
+import kotlin.math.cos
+import kotlin.math.sin
 
 class MainActivity : ComponentActivity() {
     private val viewModel: LessionViewModel by lazy {
-        ViewModelProvider(this).get(LessionViewModel::class.java)
+        ViewModelProvider(this)[LessionViewModel::class.java]
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContent {
-            LESSIONTheme {
-                LessionApp(viewModel)
-            }
-        }
+        setContent { LESSIONTheme { LessionApp(viewModel) } }
     }
 }
 
 @Composable
 fun LessionApp(viewModel: LessionViewModel) {
     val state = viewModel.state
+    val alertaSobrecarga = state.alertaSobrecarga
+    val lesion = state.lesion
+    val configuration = LocalConfiguration.current
+    val compact = configuration.screenWidthDp < 760
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        containerColor = LessionViolet
-    ) { innerPadding ->
-        Column(
+    Scaffold(modifier = Modifier.fillMaxSize(), containerColor = LessionViolet) { innerPadding ->
+        Box(
             modifier = Modifier
                 .padding(innerPadding)
                 .fillMaxSize()
         ) {
-            HeaderLession()
-            
-            Row(modifier = Modifier.weight(1f)) {
-                // LADO IZQUIERDO: SIMULADOR
-                Box(modifier = Modifier.weight(1.2f)) {
-                    SimuladorContainer(state, viewModel)
+            Column(modifier = Modifier.fillMaxSize()) {
+                HeaderLession()
+                if (compact) {
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .verticalScroll(rememberScrollState())
+                            .padding(horizontal = 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        SimuladorContainer(state, viewModel, Modifier.fillMaxWidth().height(420.dp))
+                        PanelMetricas(state)
+                        PanelMusculos(state)
+                    }
+                } else {
+                    Row(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(horizontal = 12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        SimuladorContainer(state, viewModel, Modifier.weight(1.15f).fillMaxHeight())
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .verticalScroll(rememberScrollState()),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            PanelMetricas(state)
+                            PanelMusculos(state)
+                        }
+                    }
                 }
-                
-                // LADO DERECHO: PANEL DE MÉTRICAS
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .verticalScroll(rememberScrollState())
-                        .padding(12.dp)
-                ) {
-                    PanelMetricas(state)
-                    PanelMusculos(state)
-                }
+                PanelInferior(state, viewModel)
             }
 
-            // SELECTOR DE ACTIVIDADES
-            SelectorActividades(state, viewModel)
-        }
-
-        // DIÁLOGO DE LESIÓN
-        if (state.lesion != null) {
-            OverlayLesion(state.lesion, viewModel)
+            if (alertaSobrecarga != null) {
+                AlertaSobrecarga(alertaSobrecarga)
+            }
+            if (lesion != null) {
+                OverlayLesion(lesion, viewModel)
+            }
         }
     }
 }
@@ -103,87 +171,47 @@ fun LessionApp(viewModel: LessionViewModel) {
 @Composable
 fun HeaderLession() {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 20.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(Icons.Default.FavoriteBorder, contentDescription = null, tint = LessionYellow, modifier = Modifier.size(40.dp))
-        Spacer(modifier = Modifier.width(16.dp))
-        Text(
-            "LESSION",
-            color = Color.White,
-            fontSize = 30.sp,
-            fontWeight = FontWeight.Black,
-            letterSpacing = 2.sp
-        )
-        Spacer(modifier = Modifier.weight(1f))
-        Surface(
-            color = LessionYellow,
-            shape = RoundedCornerShape(12.dp)
-        ) {
-            Text(
-                "MONITOREO ACTIVO", 
-                color = LessionViolet, 
-                fontSize = 11.sp, 
-                fontWeight = FontWeight.ExtraBold,
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
-            )
-        }
+        Icon(Icons.Default.FavoriteBorder, contentDescription = null, tint = LessionYellow, modifier = Modifier.size(34.dp))
+        Spacer(Modifier.width(12.dp))
+        Text("LESSION", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
+        Spacer(Modifier.weight(1f))
+        Text("MONITOREO ACTIVO", color = LessionYellow, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
     }
 }
 
 @Composable
-fun SimuladorContainer(state: SimulacionState, viewModel: LessionViewModel) {
+fun SimuladorContainer(state: SimulacionState, viewModel: LessionViewModel, modifier: Modifier = Modifier) {
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-            .clip(RoundedCornerShape(40.dp))
+        modifier = modifier
+            .clip(RoundedCornerShape(28.dp))
             .background(LessionVioletLight)
-            .border(2.dp, Color.White.copy(0.08f), RoundedCornerShape(40.dp))
+            .border(1.dp, Color.White.copy(0.08f), RoundedCornerShape(28.dp))
     ) {
-        // LIENZO DEL AVATAR
-        LessionAvatarCanvas(
-            state = state,
-            modifier = Modifier.fillMaxSize()
-        )
-
-        // CONTROL DE CÁMARA
+        LessionAvatarCanvas(state = state, modifier = Modifier.fillMaxSize())
         IconButton(
             onClick = { viewModel.alternarVista() },
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(20.dp)
-                .background(Color.Black.copy(0.4f), CircleShape)
+            modifier = Modifier.align(Alignment.TopEnd).padding(14.dp).background(Color.Black.copy(0.35f), CircleShape)
         ) {
-            Icon(Icons.Default.Refresh, contentDescription = null, tint = Color.White)
+            Icon(Icons.Default.Refresh, contentDescription = "Cambiar vista", tint = Color.White)
         }
-
-        // INDICADOR DE ACTIVIDAD ACTUAL
         Surface(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 24.dp),
-            color = Color.Black.copy(0.8f),
-            shape = RoundedCornerShape(24.dp)
+            modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp),
+            color = Color.Black.copy(0.75f),
+            shape = RoundedCornerShape(20.dp)
         ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    if (state.lesion != null) Icons.Default.Info else state.actividadActual.icon,
-                    contentDescription = null,
-                    tint = if (state.lesion != null) LessionRed else LessionYellow,
-                    modifier = Modifier.size(24.dp)
-                )
-                Spacer(modifier = Modifier.width(16.dp))
+            Row(Modifier.padding(horizontal = 18.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                val alert = state.lesion != null || state.alertaSobrecarga != null
+                Icon(if (alert) Icons.Default.Info else state.actividadActual.icon, null, tint = if (alert) LessionRed else LessionYellow)
+                Spacer(Modifier.width(10.dp))
                 Text(
-                    if (state.lesion != null) "LESIÓN DETECTADA" else state.actividadActual.nombre.uppercase(),
-                    color = if (state.lesion != null) LessionRed else LessionYellow,
+                    if (state.lesion != null) "LESION DETECTADA" else state.alertaSobrecarga?.let { "SOBRECARGA: $it" } ?: state.actividadActual.nombre.uppercase(),
+                    color = if (alert) LessionRed else LessionYellow,
                     fontWeight = FontWeight.Black,
-                    fontSize = 16.sp
+                    fontSize = 14.sp,
+                    maxLines = 1
                 )
             }
         }
@@ -193,191 +221,187 @@ fun SimuladorContainer(state: SimulacionState, viewModel: LessionViewModel) {
 @Composable
 fun LessionAvatarCanvas(state: SimulacionState, modifier: Modifier = Modifier) {
     val infiniteTransition = rememberInfiniteTransition(label = "avatar")
-    
-    // FLUJO ENERGÉTICO ANIMADO
-    val flowSpeed = (state.hr / 50f).coerceIn(1f, 12f)
-    val flowOffset by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 2000f,
-        animationSpec = infiniteRepeatable(
-            animation = tween((14000 / flowSpeed).toInt(), easing = LinearEasing)
-        ), label = "energy"
-    )
-
-    // MOVIMIENTO BIO-MECÁNICO
     val time by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 2 * PI.toFloat(),
         animationSpec = infiniteRepeatable(
-            animation = tween(if (state.actividadActual == TipoActividad.DESCANSO) 4000 else 600),
+            animation = tween(
+                durationMillis = when (state.actividadActual) {
+                    TipoActividad.DESCANSO -> 3600
+                    TipoActividad.CAMINAR -> 1200
+                    TipoActividad.TROTAR -> 850
+                    TipoActividad.CORRER -> 620
+                    TipoActividad.SPRINTAR -> 380
+                    TipoActividad.SALTAR -> 900
+                    TipoActividad.SENTADILLAS -> 1400
+                    TipoActividad.ESTOCADAS -> 1300
+                    TipoActividad.FUTBOL -> 900
+                    TipoActividad.BASQUET -> 780
+                    TipoActividad.CICLISMO -> 620
+                    TipoActividad.FUERZA -> 1050
+                },
+                easing = LinearEasing
+            ),
             repeatMode = RepeatMode.Restart
-        ), label = "move"
+        ),
+        label = "activity"
+    )
+    val flow by infiniteTransition.animateFloat(
+        0f,
+        1400f,
+        infiniteRepeatable(tween((14000 / (state.hr / 50f).coerceIn(1f, 10f)).toInt(), easing = LinearEasing)),
+        label = "flow"
     )
 
     Canvas(modifier = modifier) {
-        val w = size.width
-        val h = size.height
-        val cx = w / 2
-        val cy = h / 2
-        val s = h / 450f
+        val s = (minOf(size.width, size.height) / 520f).coerceAtMost(1.25f)
+        val cx = size.width / 2f
+        val baseCy = size.height / 2f + 14f * s
+        val injured = state.lesion != null || state.alertaSobrecarga != null
+        val act = state.actividadActual
 
-        val isInjured = state.lesion != null
-        val amp = if (isInjured) 0.04f else state.actividadActual.amplitudMov * s
-        val legY = sin(time) * amp
-        val armY = -sin(time) * amp
-
+        val breath = if (act == TipoActividad.DESCANSO) sin(time) * 5f * s else 0f
+        val squat = if (act == TipoActividad.SENTADILLAS) (1f - cos(time)) * 26f * s else 0f
+        val jump = if (act == TipoActividad.SALTAR) -abs(sin(time)) * 58f * s else 0f
+        val cy = baseCy + breath + squat + jump
+        val stride = when (act) {
+            TipoActividad.CAMINAR -> 16f
+            TipoActividad.TROTAR -> 28f
+            TipoActividad.CORRER, TipoActividad.FUTBOL -> 42f
+            TipoActividad.SPRINTAR -> 62f
+            TipoActividad.ESTOCADAS -> 52f
+            else -> 0f
+        } * sin(time) * s
+        val pedal = if (act == TipoActividad.CICLISMO) 38f * s else 0f
+        val arm = when (act) {
+            TipoActividad.FUERZA -> -abs(sin(time)) * 42f * s
+            TipoActividad.BASQUET -> abs(sin(time)) * 26f * s
+            else -> -stride * 0.7f
+        }
         val bodyColor = LessionVioletAccent
-
-        // 1. DIBUJO DEL CUERPO HUMANO ESTILIZADO
-        val bodyPath = Path().apply {
-            // Cabeza
-            addOval(Rect(cx - 24 * s, cy - 195 * s, cx + 24 * s, cy - 147 * s)) 
-            // Cuello
-            moveTo(cx - 10 * s, cy - 147 * s)
-            lineTo(cx + 10 * s, cy - 147 * s)
-            lineTo(cx + 14 * s, cy - 137 * s)
-            lineTo(cx - 14 * s, cy - 137 * s)
-            close()
-            // Torso
-            moveTo(cx - 42 * s, cy - 137 * s)
-            lineTo(cx + 42 * s, cy - 137 * s)
-            lineTo(cx + 36 * s, cy - 15 * s)
-            lineTo(cx - 36 * s, cy - 15 * s)
-            close()
-        }
-        drawPath(bodyPath, bodyColor)
-
-        // 2. EXTREMIDADES DINÁMICAS
-        // Brazos
-        var leftArmOffset = armY
-        val rightArmOffset = -armY
-
-        // Animación de dolor
-        if (isInjured) {
-            when (state.lesion) {
-                "Bíceps", "Hombros", "Tríceps" -> leftArmOffset = 30 * s
-                "Cuádriceps", "Rodillas" -> leftArmOffset = 110 * s
-            }
+        val body = Path().apply {
+            addOval(Rect(cx - 20 * s, cy - 188 * s, cx + 20 * s, cy - 148 * s))
+            addRoundRect(RoundRect(Rect(cx - 34 * s, cy - 138 * s, cx + 34 * s, cy - 22 * s), 18 * s, 18 * s))
         }
 
-        drawRoundRect(bodyColor, Offset(cx - 75 * s, cy - 135 * s + leftArmOffset), Size(28 * s, 115 * s), CornerRadius(14 * s))
-        drawRoundRect(bodyColor, Offset(cx + 47 * s, cy - 135 * s + rightArmOffset), Size(28 * s, 115 * s), CornerRadius(14 * s))
+        drawPath(body, bodyColor)
+        drawRoundRect(bodyColor, Offset(cx - 66 * s, cy - 132 * s + arm), Size(24 * s, 106 * s), CornerRadius(12 * s))
+        drawRoundRect(bodyColor, Offset(cx + 42 * s, cy - 132 * s - arm), Size(24 * s, 106 * s), CornerRadius(12 * s))
+        drawRoundRect(bodyColor, Offset(cx - 34 * s - stride * 0.25f, cy - 16 * s + stride + pedal * sin(time)), Size(30 * s, 178 * s), CornerRadius(15 * s))
+        drawRoundRect(bodyColor, Offset(cx + 4 * s + stride * 0.25f, cy - 16 * s - stride - pedal * sin(time)), Size(30 * s, 178 * s), CornerRadius(15 * s))
 
-        // Piernas
-        var leftLegOffset = legY
-        var rightLegOffset = -legY
-        if (isInjured) {
-            leftLegOffset = 10 * s
-            rightLegOffset = 10 * s
+        if (act == TipoActividad.CICLISMO) {
+            drawCircle(Color.White.copy(0.18f), 44 * s, Offset(cx - 62 * s, cy + 138 * s), style = Stroke(5 * s))
+            drawCircle(Color.White.copy(0.18f), 44 * s, Offset(cx + 62 * s, cy + 138 * s), style = Stroke(5 * s))
+            drawLine(LessionYellow.copy(0.55f), Offset(cx - 62 * s, cy + 138 * s), Offset(cx, cy + 74 * s), 5 * s)
+            drawLine(LessionYellow.copy(0.55f), Offset(cx + 62 * s, cy + 138 * s), Offset(cx, cy + 74 * s), 5 * s)
+        }
+        if (act == TipoActividad.FUTBOL) {
+            val ballX = cx + 96 * s + abs(sin(time)) * 74 * s
+            drawCircle(Color.White, 18 * s, Offset(ballX, cy + 158 * s))
+            drawCircle(Color.Black.copy(0.45f), 5 * s, Offset(ballX, cy + 158 * s))
+        }
+        if (act == TipoActividad.BASQUET) {
+            val ballY = cy - 35 * s + abs(sin(time)) * 95 * s
+            drawCircle(LessionOrange, 18 * s, Offset(cx + 78 * s, ballY))
+            drawLine(Color.Black.copy(0.35f), Offset(cx + 60 * s, ballY), Offset(cx + 96 * s, ballY), 2 * s)
+        }
+        if (act == TipoActividad.FUERZA) {
+            drawRoundRect(LessionYellow, Offset(cx - 105 * s, cy - 118 * s + arm), Size(28 * s, 16 * s), CornerRadius(5 * s))
+            drawRoundRect(LessionYellow, Offset(cx + 78 * s, cy - 118 * s - arm), Size(28 * s, 16 * s), CornerRadius(5 * s))
         }
 
-        drawRoundRect(bodyColor, Offset(cx - 42 * s, cy - 5 * s + leftLegOffset), Size(36 * s, 200 * s), CornerRadius(18 * s))
-        drawRoundRect(bodyColor, Offset(cx + 6 * s, cy - 5 * s + rightLegOffset), Size(36 * s, 200 * s), CornerRadius(18 * s))
-
-        // 3. SISTEMA ENERGÉTICO
         val flowColor = when {
             state.hr > 170 -> LessionRed
             state.hr > 140 -> LessionOrange
             state.hr > 100 -> LessionYellow
             else -> Color(0xFF00E5FF)
         }
-        val flowStroke = Stroke(width = 5f * s, pathEffect = PathEffect.dashPathEffect(floatArrayOf(60f, 120f), flowOffset))
-        drawPath(bodyPath, flowColor, style = flowStroke)
+        drawPath(body, flowColor, style = Stroke(4f * s, pathEffect = PathEffect.dashPathEffect(floatArrayOf(48f, 96f), flow)))
 
-        // 4. MAPEO DE MÚSCULOS
-        state.musculos.forEach { (name, m) ->
-            val intensity = m.fatiga / 100f
-            if (intensity > 0.05f || state.lesion == name) {
-                val colorM = when {
-                    state.lesion == name || m.fatiga > 85f -> LessionRed
-                    m.fatiga > 70f -> LessionOrange
-                    m.fatiga > 45f -> LessionYellow
-                    else -> Color.Green.copy(0.6f)
-                }
-
-                val mPos = when (name) {
-                    "Cuádriceps" -> if (state.esFrontal) Offset(cx - 24 * s, cy + 70 * s + leftLegOffset) else null
-                    "Gemelos" -> if (!state.esFrontal) Offset(cx - 24 * s, cy + 155 * s + leftLegOffset) else null
-                    "Tibiales" -> if (state.esFrontal) Offset(cx - 24 * s, cy + 155 * s + leftLegOffset) else null
-                    "Isquiotibiales" -> if (!state.esFrontal) Offset(cx - 24 * s, cy + 85 * s + leftLegOffset) else null
-                    "Glúteos" -> if (!state.esFrontal) Offset(cx, cy + 35 * s) else null
-                    "Hombros" -> Offset(cx + 60 * s, cy - 125 * s + rightArmOffset)
-                    "Bíceps" -> if (state.esFrontal) Offset(cx - 60 * s, cy - 85 * s + leftArmOffset) else null
-                    "Tríceps" -> if (!state.esFrontal) Offset(cx - 60 * s, cy - 85 * s + leftArmOffset) else null
-                    "Rodillas" -> if (state.esFrontal) Offset(cx - 24 * s, cy + 115 * s + leftLegOffset) else null
-                    "Tobillos" -> Offset(cx - 24 * s, cy + 190 * s + leftLegOffset)
-                    else -> null
-                }
-
-                mPos?.let {
-                    val radius = (16 + 16 * intensity) * s
-                    drawCircle(colorM, radius, it, alpha = 0.3f + 0.7f * intensity)
-                    if (state.lesion == name) {
-                        val pSize = abs(sin(time * 5)) * 30 * s
-                        drawCircle(LessionRed, radius + pSize, it, style = Stroke(6f * s))
-                    }
-                }
+        state.musculos.forEach { (name, muscle) ->
+            val intensity = ((muscle.fatiga * 0.55f + muscle.carga * 0.45f) / 100f).coerceIn(0f, 1f)
+            val pos = musclePosition(name, cx, cy, s, state.esFrontal)
+            if (pos != null && (intensity > 0.06f || state.lesion == name || state.alertaSobrecarga == name)) {
+                val hot = state.lesion == name || state.alertaSobrecarga == name || muscle.fatiga > 82f
+                val color = if (hot) LessionRed else if (muscle.fatiga > 60f) LessionOrange else LessionYellow
+                val pulse = 1f + abs(sin(time * 3f)) * 0.35f
+                drawCircle(color, (12f + intensity * 22f) * s * pulse, pos, alpha = 0.25f + intensity * 0.55f)
+                drawCircle(color, (16f + intensity * 24f) * s * pulse, pos, style = Stroke(3f * s), alpha = 0.45f)
             }
         }
-        
-        // EXPRESIÓN DE DOLOR
-        if (isInjured) {
-            drawCircle(LessionRed, 7 * s, Offset(cx - 12 * s, cy - 180 * s))
-            drawCircle(LessionRed, 7 * s, Offset(cx + 12 * s, cy - 180 * s))
-            drawLine(LessionRed, Offset(cx - 15 * s, cy - 165 * s), Offset(cx + 15 * s, cy - 165 * s), strokeWidth = 4 * s)
+
+        if (injured) {
+            drawCircle(LessionRed, 6 * s, Offset(cx - 10 * s, cy - 176 * s))
+            drawCircle(LessionRed, 6 * s, Offset(cx + 10 * s, cy - 176 * s))
+            drawLine(LessionRed, Offset(cx - 14 * s, cy - 162 * s), Offset(cx + 14 * s, cy - 162 * s), 4 * s)
+            val target = musclePosition(state.lesion ?: state.alertaSobrecarga.orEmpty(), cx, cy, s, state.esFrontal) ?: Offset(cx - 50 * s, cy - 85 * s)
+            drawLine(LessionYellow, Offset(cx - 54 * s, cy - 82 * s), target, 8 * s, cap = StrokeCap.Round)
         }
     }
 }
 
+private fun musclePosition(name: String, cx: Float, cy: Float, s: Float, frontal: Boolean): Offset? = when (name) {
+    "Cuadriceps" -> if (frontal) Offset(cx - 22 * s, cy + 60 * s) else null
+    "Gemelos" -> if (!frontal) Offset(cx - 22 * s, cy + 148 * s) else null
+    "Tibiales" -> if (frontal) Offset(cx - 22 * s, cy + 150 * s) else null
+    "Isquiotibiales" -> if (!frontal) Offset(cx - 22 * s, cy + 82 * s) else null
+    "Gluteos" -> if (!frontal) Offset(cx, cy + 26 * s) else null
+    "Hombros" -> Offset(cx + 54 * s, cy - 122 * s)
+    "Biceps" -> if (frontal) Offset(cx - 55 * s, cy - 82 * s) else null
+    "Triceps" -> if (!frontal) Offset(cx - 55 * s, cy - 82 * s) else null
+    "Rodillas" -> if (frontal) Offset(cx - 20 * s, cy + 108 * s) else null
+    "Tobillos" -> Offset(cx - 20 * s, cy + 176 * s)
+    else -> null
+}
+
 @Composable
 fun PanelMetricas(state: SimulacionState) {
-    Column {
-        TarjetaMetrica("FRECUENCIA CARDÍACA", "${state.hr.toInt()} BPM", state.hr / 200f, LessionYellow, state.hrHistory, 200f)
-        TarjetaMetrica("ENERGÍA CORPORAL", "${state.energia.toInt()}%", state.energia / 100f, LessionEnergy, state.energyHistory, 100f)
-        TarjetaMetrica("TEMPERATURA", "${"%.1f".format(state.temperatura)}°C", (state.temperatura - 36) / 7f, LessionTemp, state.tempHistory, 43f, 36f)
-        TarjetaMetrica("FATIGA MUSCULAR", "${state.fatigaGeneral.toInt()}%", state.fatigaGeneral / 100f, LessionFatigue, state.fatigueHistory, 100f)
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        TarjetaMetrica("Frecuencia cardiaca", "${state.hr.toInt()} BPM", state.hr / 200f, LessionYellow, state.hrHistory, 200f)
+        TarjetaMetrica("Energia corporal", "${state.energia.toInt()}%", state.energia / 100f, LessionEnergy, state.energyHistory, 100f)
+        TarjetaMetrica("Temperatura", "${"%.1f".format(state.temperatura)} C", (state.temperatura - 36) / 7f, LessionTemp, state.tempHistory, 43f, 36f)
+        TarjetaMetrica("Fatiga muscular", "${state.fatigaGeneral.toInt()}%", state.fatigaGeneral / 100f, LessionFatigue, state.fatigueHistory, 100f)
     }
 }
 
 @Composable
 fun TarjetaMetrica(label: String, value: String, progress: Float, color: Color, history: List<Float>, max: Float, min: Float = 0f) {
     Card(
-        modifier = Modifier.padding(vertical = 10.dp).fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = LessionVioletLight),
-        shape = RoundedCornerShape(24.dp),
-        border = BorderStroke(1.5.dp, color.copy(0.25f))
+        shape = RoundedCornerShape(18.dp),
+        border = BorderStroke(1.dp, color.copy(0.25f))
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
-                Text(label, color = Color.White.copy(0.6f), fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
-                Text(value, color = color, fontSize = 24.sp, fontWeight = FontWeight.Black)
+        Column(Modifier.padding(14.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
+                Text(label.uppercase(), color = Color.White.copy(0.62f), fontSize = 10.sp, fontWeight = FontWeight.ExtraBold)
+                Text(value, color = color, fontSize = 22.sp, fontWeight = FontWeight.Black)
             }
-            Spacer(modifier = Modifier.height(14.dp))
-            
-            Box(modifier = Modifier.fillMaxWidth().height(60.dp).drawBehind {
+            Spacer(Modifier.height(10.dp))
+            Box(Modifier.fillMaxWidth().height(48.dp).drawBehind {
                 if (history.size > 1) {
                     val p = Path()
                     val dx = size.width / (history.size - 1)
                     val range = max - min
                     history.forEachIndexed { i, v ->
                         val x = i * dx
-                        val y = size.height - ((v - min) / range * size.height)
+                        val y = size.height - ((v - min) / range * size.height).coerceIn(0f, size.height)
                         if (i == 0) p.moveTo(x, y) else p.lineTo(x, y)
                     }
-                    drawPath(p, color, style = Stroke(width = 4.dp.toPx(), cap = StrokeCap.Round))
+                    drawPath(p, color, style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round))
                     p.lineTo(size.width, size.height)
                     p.lineTo(0f, size.height)
                     p.close()
-                    drawPath(p, Brush.verticalGradient(listOf(color.copy(0.4f), Color.Transparent)))
+                    drawPath(p, Brush.verticalGradient(listOf(color.copy(0.35f), Color.Transparent)))
                 }
             })
-
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(Modifier.height(10.dp))
             LinearProgressIndicator(
                 progress = { progress.coerceIn(0f, 1f) },
-                modifier = Modifier.fillMaxWidth().height(10.dp).clip(CircleShape),
+                modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
                 color = color,
-                trackColor = Color.White.copy(0.06f)
+                trackColor = Color.White.copy(0.07f)
             )
         }
     }
@@ -387,63 +411,71 @@ fun TarjetaMetrica(label: String, value: String, progress: Float, color: Color, 
 fun PanelMusculos(state: SimulacionState) {
     Card(
         colors = CardDefaults.cardColors(containerColor = LessionVioletLight),
-        shape = RoundedCornerShape(24.dp),
-        modifier = Modifier.padding(top = 10.dp).fillMaxWidth()
+        shape = RoundedCornerShape(18.dp),
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Column(modifier = Modifier.padding(22.dp)) {
-            Text("CARGA POR GRUPO MUSCULAR", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Black)
-            Spacer(modifier = Modifier.height(20.dp))
-            
-            val activos = state.musculos.values.filter { it.carga > 0.5f }.sortedByDescending { it.carga }
+        Column(Modifier.padding(18.dp)) {
+            Text("MUSCULOS EN TIEMPO REAL", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Black)
+            Spacer(Modifier.height(14.dp))
+            val activos = state.musculos.values.filter { it.carga > 0.5f || it.fatiga > 5f }.sortedByDescending { it.carga + it.fatiga }
             if (activos.isEmpty()) {
-                Text("Cuerpo en estado de reposo absoluto", color = Color.White.copy(0.35f), fontSize = 12.sp)
+                Text("Cuerpo en reposo y recuperacion", color = Color.White.copy(0.45f), fontSize = 12.sp)
             } else {
-                activos.take(6).forEach { m ->
-                    Column(modifier = Modifier.padding(vertical = 7.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(m.nombre, color = Color.White.copy(0.85f), fontSize = 13.sp, modifier = Modifier.weight(1f))
-                            Text("${m.carga.toInt()}%", color = LessionYellow, fontSize = 13.sp, fontWeight = FontWeight.Black)
-                        }
-                        Spacer(modifier = Modifier.height(6.dp))
-                        LinearProgressIndicator(
-                            progress = { m.carga / 100f },
-                            modifier = Modifier.fillMaxWidth().height(5.dp).clip(CircleShape),
-                            color = if (m.carga > 80) LessionRed else LessionYellow.copy(0.85f),
-                            trackColor = Color.White.copy(0.06f)
-                        )
-                    }
-                }
+                activos.take(7).forEach { MusculoRow(it) }
             }
         }
     }
 }
 
 @Composable
-fun SelectorActividades(state: SimulacionState, viewModel: LessionViewModel) {
-    Surface(
-        color = LessionVioletLight,
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(topStart = 40.dp, topEnd = 40.dp)
-    ) {
-        Column(modifier = Modifier.padding(top = 24.dp, bottom = 36.dp)) {
-            Text(
-                "SELECCIONAR ACTIVIDAD FÍSICA",
-                color = Color.White.copy(0.45f),
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Black,
-                modifier = Modifier.padding(start = 36.dp, bottom = 18.dp)
-            )
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(18.dp)
-            ) {
+fun MusculoRow(m: EstadoMusculo) {
+    val riesgo = when {
+        m.fatiga > 82f || m.carga > 88f -> "Critico"
+        m.fatiga > 60f || m.carga > 68f -> "Alto"
+        m.carga > 30f -> "Medio"
+        else -> "Bajo"
+    }
+    val color = when (riesgo) {
+        "Critico" -> LessionRed
+        "Alto" -> LessionOrange
+        else -> LessionYellow
+    }
+    Column(Modifier.padding(vertical = 6.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(m.nombre, color = Color.White.copy(0.9f), fontSize = 13.sp, modifier = Modifier.weight(1f))
+            Text("${m.carga.toInt()}%  $riesgo", color = color, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        }
+        Spacer(Modifier.height(5.dp))
+        LinearProgressIndicator(
+            progress = { (m.carga / 100f).coerceIn(0f, 1f) },
+            modifier = Modifier.fillMaxWidth().height(5.dp).clip(CircleShape),
+            color = color,
+            trackColor = Color.White.copy(0.07f)
+        )
+    }
+}
+
+@Composable
+fun PanelInferior(state: SimulacionState, viewModel: LessionViewModel) {
+    Surface(color = LessionVioletLight, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp)) {
+        Column(Modifier.padding(top = 14.dp, bottom = 18.dp)) {
+            LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 items(TipoActividad.entries) { act ->
-                    ActividadItem(
-                        act = act,
-                        isSelected = state.actividadActual == act,
-                        onClick = { viewModel.cambiarActividad(act) }
-                    )
+                    ActividadItem(act, state.actividadActual == act) { viewModel.cambiarActividad(act) }
                 }
+            }
+            Spacer(Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                DatoSecundario("Activos", state.musculos.values.count { it.carga > 5f }.toString())
+                DatoSecundario("Fatigados", state.musculos.values.count { it.fatiga > 55f }.toString())
+                DatoSecundario("Tiempo", "${state.tiempoActividad}s")
+                DatoSecundario("Consumo", "${(100 - state.energia).toInt()}%")
+                DatoSecundario("Recuperacion", "${(100 - state.fatigaGeneral).toInt()}%")
+                DatoSecundario("Riesgo", riesgoGeneral(state))
+                DatoSecundario("Estado", estadoFisiologico(state))
             }
         }
     }
@@ -451,78 +483,103 @@ fun SelectorActividades(state: SimulacionState, viewModel: LessionViewModel) {
 
 @Composable
 fun ActividadItem(act: TipoActividad, isSelected: Boolean, onClick: () -> Unit) {
-    val scale by animateFloatAsState(if (isSelected) 1.15f else 1f, label = "scale")
-    
+    val scale by animateFloatAsState(if (isSelected) 1.06f else 1f, label = "scale")
     Column(
         modifier = Modifier
-            .width(120.dp)
+            .width(104.dp)
             .graphicsLayer(scaleX = scale, scaleY = scale)
-            .clip(RoundedCornerShape(28.dp))
+            .clip(RoundedCornerShape(18.dp))
             .background(if (isSelected) LessionYellow else LessionVioletAccent)
             .clickable { onClick() }
-            .padding(20.dp),
+            .padding(14.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Icon(
-            act.icon, 
-            contentDescription = null, 
-            tint = if (isSelected) LessionViolet else Color.White,
-            modifier = Modifier.size(36.dp)
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            act.nombre,
-            color = if (isSelected) LessionViolet else Color.White,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Black,
-            textAlign = TextAlign.Center,
-            maxLines = 1
-        )
+        Icon(act.icon, contentDescription = act.nombre, tint = if (isSelected) LessionViolet else Color.White, modifier = Modifier.size(28.dp))
+        Spacer(Modifier.height(10.dp))
+        Text(act.nombre, color = if (isSelected) LessionViolet else Color.White, fontSize = 12.sp, fontWeight = FontWeight.Black, textAlign = TextAlign.Center, maxLines = 1)
+    }
+}
+
+@Composable
+fun DatoSecundario(label: String, value: String) {
+    Column(
+        modifier = Modifier
+            .width(118.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(LessionViolet.copy(0.55f))
+            .border(1.dp, Color.White.copy(0.07f), RoundedCornerShape(14.dp))
+            .padding(12.dp)
+    ) {
+        Text(label.uppercase(), color = Color.White.copy(0.45f), fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1)
+        Spacer(Modifier.height(5.dp))
+        Text(value, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Black, maxLines = 1)
+    }
+}
+
+private fun riesgoGeneral(state: SimulacionState): String = when {
+    state.lesion != null -> "Lesion"
+    state.alertaSobrecarga != null -> "Critico"
+    state.fatigaGeneral > 70f || state.temperatura > 39.4f || state.hr > 170f -> "Alto"
+    state.fatigaGeneral > 35f || state.hr > 135f -> "Medio"
+    else -> "Bajo"
+}
+
+private fun estadoFisiologico(state: SimulacionState): String = when {
+    state.lesion != null -> "Bloqueado"
+    state.alertaSobrecarga != null -> "Descanso"
+    state.actividadActual == TipoActividad.DESCANSO -> "Recuperando"
+    state.hr > 160f -> "Intenso"
+    else -> "Estable"
+}
+
+@Composable
+fun AlertaSobrecarga(musculo: String) {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+        Surface(
+            modifier = Modifier.padding(top = 76.dp, start = 16.dp, end = 16.dp),
+            color = LessionRed.copy(0.92f),
+            shape = RoundedCornerShape(18.dp)
+        ) {
+            Text(
+                "Sobrecarga en $musculo. Actividad detenida e inicio de recuperacion.",
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                fontSize = 13.sp,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                textAlign = TextAlign.Center
+            )
+        }
     }
 }
 
 @Composable
 fun OverlayLesion(musculo: String, viewModel: LessionViewModel) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(0.95f))
-            .clickable(enabled = false) {},
-        contentAlignment = Alignment.Center
-    ) {
+    Box(Modifier.fillMaxSize().background(Color.Black.copy(0.92f)), contentAlignment = Alignment.Center) {
         Card(
             colors = CardDefaults.cardColors(containerColor = LessionViolet),
-            shape = RoundedCornerShape(48.dp),
-            modifier = Modifier.padding(24.dp).border(3.dp, LessionRed, RoundedCornerShape(48.dp))
+            shape = RoundedCornerShape(28.dp),
+            modifier = Modifier.padding(22.dp).border(2.dp, LessionRed, RoundedCornerShape(28.dp))
         ) {
-            Column(
-                modifier = Modifier.padding(40.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Box(
-                    modifier = Modifier.size(110.dp).background(LessionRed.copy(0.25f), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Default.Info, contentDescription = null, tint = LessionRed, modifier = Modifier.size(70.dp))
-                }
-                Spacer(modifier = Modifier.height(32.dp))
-                Text("¡LESIÓN DETECTADA!", color = Color.White, fontSize = 32.sp, fontWeight = FontWeight.Black)
-                Spacer(modifier = Modifier.height(18.dp))
+            Column(Modifier.padding(30.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(Icons.Default.Info, contentDescription = null, tint = LessionRed, modifier = Modifier.size(68.dp))
+                Spacer(Modifier.height(20.dp))
+                Text("LESION DETECTADA", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Black, textAlign = TextAlign.Center)
+                Spacer(Modifier.height(14.dp))
                 Text(
-                    "Se ha producido una rotura o distensión crítica en: $musculo.\n\nEl sistema ha bloqueado la actividad física. Inicie el protocolo de recuperación inmediata.",
+                    "Se produjo una rotura o distension critica en: $musculo.\n\nLa actividad fisica fue bloqueada. Inicia el protocolo de recuperacion.",
                     color = Color.White.copy(0.85f),
                     textAlign = TextAlign.Center,
-                    lineHeight = 26.sp,
-                    fontSize = 16.sp
+                    lineHeight = 24.sp,
+                    fontSize = 15.sp
                 )
-                Spacer(modifier = Modifier.height(40.dp))
+                Spacer(Modifier.height(26.dp))
                 Button(
                     onClick = { viewModel.iniciarRecuperacion() },
                     colors = ButtonDefaults.buttonColors(containerColor = LessionYellow),
-                    modifier = Modifier.fillMaxWidth().height(70.dp),
-                    shape = RoundedCornerShape(22.dp)
+                    modifier = Modifier.fillMaxWidth().height(58.dp),
+                    shape = RoundedCornerShape(18.dp)
                 ) {
-                    Text("INICIAR RECUPERACIÓN", color = LessionViolet, fontWeight = FontWeight.Black, fontSize = 18.sp)
+                    Text("INICIAR RECUPERACION", color = LessionViolet, fontWeight = FontWeight.Black)
                 }
             }
         }
@@ -532,7 +589,5 @@ fun OverlayLesion(musculo: String, viewModel: LessionViewModel) {
 @Preview(showBackground = true)
 @Composable
 fun LessionPreview() {
-    LESSIONTheme {
-        LessionApp(LessionViewModel())
-    }
+    LESSIONTheme { LessionApp(LessionViewModel()) }
 }
