@@ -11,26 +11,27 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
-    primary = LessionYellow,
-    secondary = LessionVioletAccent,
+    primary = SportyRed,
+    secondary = SportyGreyDark,
     tertiary = LessionEnergy,
-    background = LessionViolet,
-    surface = LessionVioletLight,
-    onPrimary = LessionViolet,
-    onSecondary = LessionYellow,
-    onTertiary = LessionViolet,
-    onBackground = LessionYellow,
-    onSurface = LessionYellow
+    background = SportyBlack,
+    surface = SportyDeepGrey,
+    onPrimary = SportyWhite,
+    onSecondary = SportyWhite,
+    onTertiary = SportyBlack,
+    onBackground = SportyWhite,
+    onSurface = SportyWhite,
+    surfaceVariant = SportySurface,
+    onSurfaceVariant = SportyGrey
 )
 
 @Composable
 fun LESSIONTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is disabled to maintain the brand identity (Violet/Yellow)
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = DarkColorScheme // Always dark/tech theme as per requirements
+    val colorScheme = DarkColorScheme
 
     val view = LocalView.current
     if (!view.isInEditMode) {
